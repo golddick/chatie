@@ -8,3 +8,7 @@ import { connectDB } from "./src/config/database";
         console.log(`Server is running on port ${PORT}`);
     });
  })
+ .catch((error) => {
+    console.error("failed to start the server", error);
+    process.exit(1)
+ })
