@@ -7,12 +7,12 @@ export async function getMe(req:AuthRequest, res: Response, next:NextFunction) {
     try{
         const userId = req.userId;
         if (!userId) {
-            res.status(401).json({ message: "Unauthorized - user ID not found" });
+            return res.status(401).json({ message: "Unauthorized - user ID not found" });
         }
 
         const user = await User.findById(userId);
         if (!user) {
-            res.status(404).json({ message: "User not found" });
+           return res.status(404).json({ message: "User not found" });
         }
 
         res.status(200).json(user);
