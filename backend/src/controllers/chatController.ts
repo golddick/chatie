@@ -40,6 +40,14 @@ export async function getOrCreateChat(req: AuthRequest, res: Response, next: Nex
         const userId = req.userId;
         const { participantId } = req.params;
 
+        if (!participantId) {
+            return res.status(400).json({ message: "Participant ID is required" });
+        }
+
+        if (userId === participantId) {
+            return res.status(400).json({ message: "Cannot create a chat with yourself" });
+        }
+
         let chat = await Chat.findOne({
             participants: { $all: [userId, participantId] }
         })

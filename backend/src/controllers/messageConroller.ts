@@ -11,7 +11,7 @@ export async function getMessages(req:AuthRequest, res:Response, next:NextFuncti
 
         const chat = await Chat.findOne({
             _id:chatId,
-            partiipants: userId,
+            participants: userId,
         });
 
         if (!chat) {
