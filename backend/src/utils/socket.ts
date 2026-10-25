@@ -6,9 +6,9 @@ import { Chat } from "../models/Chat";
 import { User } from "../models/User";
 
 
-interface SocketWithUserId extends Socket {
-    userId?: string;
-}
+// interface SocketWithUserId extends Socket {
+//     userId?: string;
+// }
 
 export const onlineUsers: Map<string, string> = new Map()
 
@@ -38,7 +38,7 @@ export const initializeSocket = (httpServer: HttpServer) => {
             const user = await User.findOne({clerkId});
             if (!user) return next(new Error("Authentication error: User not found"));
 
-            (socket as SocketWithUserId).userId = user._id.toString();
+            socket.data.userId = user._id.toString();
 
 
             next()
@@ -51,7 +51,7 @@ export const initializeSocket = (httpServer: HttpServer) => {
     // its an event that triggered when a new client connects to the server 
 
     io.on("connection", (socket) => {
-        const userId = (socket as SocketWithUserId).userId;
+        const userId = socket.data.userId;
         if (!userId) {
             socket.disconnect(true);
             return;
@@ -115,7 +115,7 @@ export const initializeSocket = (httpServer: HttpServer) => {
                 chat.lastMessageAt = new Date();
                 await chat.save()
 
-                await message.populate("sender", "name email avatar")
+                await message.populate("sender", "name avatar")
 
                 //emit to chat room (for users inside the chat)
 
