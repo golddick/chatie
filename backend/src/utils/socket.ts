@@ -16,7 +16,7 @@ export const onlineUsers: Map<string, string> = new Map()
 export const initializeSocket = (httpServer: HttpServer) => {
 
     const allowedOrigins = [
-       process.env.MOBILE_ORIGIN_UR! || "http://localhost:8081",
+       process.env.MOBILE_ORIGIN_URL! || "http://localhost:8081",
         process.env.FRONTEND_URL! || "http://localhost:5173",
         "http://localhost:5173",
     ]
@@ -68,8 +68,21 @@ export const initializeSocket = (httpServer: HttpServer) => {
 
         socket.join(`user:${userId}`)
 
-        socket.on("join-chat", (chatId:string) => {
-            socket.join(`chat:${chatId}`)
+        // socket.on("join-chat", (chatId:string) => {
+        //     socket.join(`chat:${chatId}`)
+        // })
+
+           socket.on("join-chat", async (chatId:string) => {
+          try {
+                const isParticipant = await Chat.exists({ _id: chatId, participants: userId });
+                if (!isParticipant) {
+                    socket.emit("socket-error", {message: "chat not found"});
+                    return;
+                }
+                socket.join(`chat:${chatId}`)
+            } catch (error) {
+                socket.emit("socket-error", {message: "Failed to join chat"});
+            }
         })
 
         socket.on("leave-chat", (chatId:string) => {
@@ -106,13 +119,20 @@ export const initializeSocket = (httpServer: HttpServer) => {
 
                 //emit to chat room (for users inside the chat)
 
-                io.to(`chat:${chatId}`).emit("new-message", message)
+                // io.to(`chat:${chatId}`).emit("new-message", message)
 
-                //also emit to participants personal rooms (for chat list view)
+                // //also emit to participants personal rooms (for chat list view)
 
-                for (const participantId of chat.participants) {
-                    io.to(`user:${participantId}`).emit("new-message", message )
-                }
+                // for (const participantId of chat.participants) {
+                //     io.to(`user:${participantId}`).emit("new-message", message )
+                // }
+
+                // emit once to the chat room and to each participant's personal room (for chat list view)
+                const rooms = [
+                    `chat:${chatId}`,
+                    ...chat.participants.map((participantId) => `user:${participantId}`),
+                ];
+                io.to(rooms).emit("new-message", message)
 
             } catch (error) {
                 socket.emit("socket-error", {message: "Faild to send message "})
@@ -122,7 +142,21 @@ export const initializeSocket = (httpServer: HttpServer) => {
         //todo: later
         socket.on("typing", async (data) => {} )
 
-        socket.on("disconnect", () => {
+        // socket.on("disconnect", () => {
+        //     onlineUsers.delete(userId);
+
+        //     //notify others
+        //     socket.broadcast.emit("user-offline", {userId})
+        // })
+
+
+          socket.on("disconnect", async () => {
+            try {
+                const remaining = await io.in(`user:${userId}`).fetchSockets();
+                if (remaining.length > 0) return;
+            } catch (error) {
+                console.error("Failed to check remaining sockets", error);
+            }
             onlineUsers.delete(userId);
 
             //notify others
