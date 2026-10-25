@@ -24,7 +24,7 @@ COPY backend/ ./
 # expose port
 EXPOSE 4000
 # set non-sensitive defaults 
-ENV PORT=4000
+# ENV PORT=4000
 ENV NODE_ENV=production
 
 # start the application
